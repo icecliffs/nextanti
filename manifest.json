@@ -1,0 +1,58 @@
+{
+    "manifest_version": 3,
+    "name": "NextAnti - 红队反蜜罐插件",
+    "version": "0.3.1",
+    "description": "用于拦截蜜罐、浏览器指纹采集、JSONP 溯源与动态跟踪行为的安全插件。",
+    "icons": {
+        "16": "icons/icon16.png",
+        "32": "icons/icon32.png",
+        "48": "icons/icon48.png",
+        "128": "icons/icon128.png"
+    },
+    "background": {
+        "service_worker": "background.js"
+    },
+    "action": {
+        "default_popup": "popup.html",
+        "default_title": "NextAnti 控制面板"
+    },
+    "permissions": [
+        "storage",
+        "tabs",
+        "notifications",
+        "browsingData",
+        "scripting",
+        "declarativeNetRequest",
+        "declarativeNetRequestFeedback",
+        "webNavigation"
+    ],
+    "host_permissions": [
+        "<all_urls>"
+    ],
+    "content_scripts": [
+        {
+        "matches": [
+            "<all_urls>"
+        ],
+        "js": [
+            "content.js"
+        ],
+        "run_at": "document_start",
+        "all_frames": true
+        }
+    ],
+    "web_accessible_resources": [
+        {
+        "resources": [
+            "inject.js"
+        ],
+        "matches": [
+            "<all_urls>"
+        ]
+        }
+    ],
+    "minimum_chrome_version": "110",
+    "content_security_policy": {
+        "extension_pages": "script-src 'self'; object-src 'self';"
+    }
+}

@@ -1,0 +1,34 @@
+# macOS
+.DS_Store
+
+# Logs
+*.log
+
+# Temp
+*.tmp
+*.temp
+
+# Node
+node_modules/
+
+# Build
+dist/
+build/
+
+# Chrome Extension Package
+*.crx
+*.pem
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+
+# Cache
+.cache/
+
+# Env
+.env
+.env.local

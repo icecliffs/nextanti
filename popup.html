@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>NextAnti</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --panel: #111827;
+            --border: #1f2937;
+            --text: #e5e7eb;
+            --muted: #9ca3af;
+            --danger: #ef4444;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --primary: #3b82f6;
+        }
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            margin: 0;
+            width: 360px;
+            background: var(--bg);
+            color: var(--text);
+            font-family:
+                Inter,
+                "PingFang SC",
+                "Microsoft YaHei",
+                sans-serif;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 18px;
+            border-bottom: 1px solid var(--border);
+            background:
+                linear-gradient(
+                    135deg,
+                    #111827,
+                    #0f172a
+                );
+        }
+        .header img {
+            width: 36px;
+            height: 36px;
+        }
+        .title-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .title {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+        .subtitle {
+            font-size: 11px;
+            color: var(--muted);
+            margin-top: 2px;
+        }
+        .container {
+            padding: 16px;
+        }
+        .card {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 16px;
+            margin-bottom: 14px;
+        }
+        .status-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .status-label {
+            font-size: 13px;
+            color: var(--muted);
+        }
+        .engine-status {
+            font-size: 12px;
+            color: var(--success);
+            font-weight: 600;
+        }
+        .counter {
+            font-size: 42px;
+            font-weight: 800;
+            margin-top: 10px;
+            color: var(--danger);
+        }
+        .counter-desc {
+            margin-top: 4px;
+            font-size: 12px;
+            color: var(--muted);
+        }
+        .feature {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+        .feature:last-child {
+            border-bottom: none;
+        }
+        .feature-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .feature-title {
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .feature-desc {
+            font-size: 11px;
+            color: var(--muted);
+        }
+        .switch {
+            position: relative;
+            width: 48px;
+            height: 24px;
+        }
+        .switch input {
+            display: none;
+        }
+        .slider {
+            position: absolute;
+            inset: 0;
+            background: #374151;
+            border-radius: 999px;
+            transition: .25s;
+            cursor: pointer;
+        }
+        .slider::before {
+            content: '';
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            left: 3px;
+            top: 3px;
+            background: white;
+            border-radius: 50%;
+            transition: .25s;
+        }
+        input:checked + .slider {
+            background: var(--success);
+        }
+        input:checked + .slider::before {
+            transform: translateX(24px);
+        }
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .btn {
+            width: 100%;
+            border: none;
+            border-radius: 10px;
+            padding: 12px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 700;
+            transition: .2s;
+        }
+        .btn-danger {
+            background: rgba(239,68,68,0.12);
+            color: var(--danger);
+            border: 1px solid rgba(239,68,68,0.35);
+        }
+        .btn-danger:hover {
+            background: rgba(239,68,68,0.2);
+        }
+        .btn-primary {
+            background: rgba(59,130,246,0.12);
+            color: var(--primary);
+            border: 1px solid rgba(59,130,246,0.35);
+        }
+        .btn-primary:hover {
+            background: rgba(59,130,246,0.2);
+        }
+        .footer {
+            text-align: center;
+            padding: 14px;
+            color: var(--muted);
+            font-size: 11px;
+            border-top: 1px solid var(--border);
+        }
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(34,197,94,0.12);
+            color: var(--success);
+            border: 1px solid rgba(34,197,94,0.3);
+            padding: 4px 8px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--success);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <img src="./icons/icon128.png" alt="logo">
+        <div class="title-group">
+            <div class="title">NextAnti</div>
+            <div class="subtitle">
+                Browser Anti Honeypot Engine
+            </div>
+        </div>
+    </div>
+    <div class="container">
+        <!-- 状态 -->
+        <div class="card">
+            <div class="status-top">
+                <div class="status-label">
+                    已拦截潜在溯源行为
+                </div>
+                <div class="badge">
+                    <div class="dot"></div>
+                    ACTIVE
+                </div>
+            </div>
+            <div
+                class="counter"
+                id="interceptCount"
+            >
+                0
+            </div>
+            <div class="counter-desc">
+                包括 JSONP、指纹采集、WebRTC、
+                分析追踪与动态脚本行为
+            </div>
+        </div>
+        <!-- 功能 -->
+        <div class="card">
+            <div class="feature">
+                <div class="feature-info">
+                    <div class="feature-title">
+                        总防护开关
+                    </div>
+                    <div class="feature-desc">
+                        启用或关闭 NextAnti
+                    </div>
+                </div>
+                <label class="switch">
+                    <input
+                        type="checkbox"
+                        id="mainSwitch"
+                        checked
+                    >
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="feature">
+                <div class="feature-info">
+                    <div class="feature-title">
+                        指纹混淆
+                    </div>
+                    <div class="feature-desc">
+                        Canvas / Audio / WebGL
+                    </div>
+                </div>
+                <label class="switch">
+                    <input
+                        type="checkbox"
+                        id="fingerprintSwitch"
+                        checked
+                    >
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="feature">
+                <div class="feature-info">
+                    <div class="feature-title">
+                        WebRTC 防泄漏
+                    </div>
+                    <div class="feature-desc">
+                        阻止真实 IP 暴露
+                    </div>
+                </div>
+                <label class="switch">
+                    <input
+                        type="checkbox"
+                        id="webrtcSwitch"
+                        checked
+                    >
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+        <!-- 操作 -->
+        <div class="card">
+            <div class="button-group">
+                <button
+                    class="btn btn-danger"
+                    id="clearDataBtn"
+                >
+                    一键清除当前站点数据
+                </button>
+                <button
+                    class="btn btn-primary"
+                    id="reloadBtn"
+                >
+                    重新加载当前页面
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="footer">
+        NextAnti v0.3.1 · Gh0xE9（浅红实验室）
+    </div>
+    <script src="popup.js"></script>
+</body>
+</html>
