@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "NextAnti - 红队反蜜罐插件",
-    "version": "0.3.1",
+    "version": "0.3.3",
     "description": "用于拦截蜜罐、浏览器指纹采集、JSONP 溯源与动态跟踪行为的安全插件。",
     "icons": {
         "16": "icons/icon16.png",

@@ -1,7 +1,8 @@
 ## NextAnti
 
 > NextAnti 是一个基于 Chrome Manifest V3 的浏览器安全扩展，是一款专门用于反反蜜罐的插件
-> 建议打红的时候再用，不然平时插件会一直删Cookie
+
+> **建议打红的时候再用，不然平时插件会一直删Cookie**
 
 - 反追踪（Anti Tracking）
 - 反指纹（Anti Fingerprint）
