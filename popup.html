@@ -5,15 +5,15 @@
     <title>NextAnti</title>
     <style>
         :root {
-            --bg: #0f172a;
-            --panel: #111827;
-            --border: #1f2937;
-            --text: #e5e7eb;
-            --muted: #9ca3af;
+            --bg: #f3f4f6;
+            --panel: #ffffff;
+            --border: #d1d5db;
+            --text: #111827;
+            --muted: #6b7280;
             --danger: #ef4444;
             --success: #22c55e;
-            --warning: #f59e0b;
-            --primary: #3b82f6;
+            --warning: #d97706;
+            --primary: #2563eb;
         }
         * {
             box-sizing: border-box;
@@ -38,8 +38,8 @@
             background:
                 linear-gradient(
                     135deg,
-                    #111827,
-                    #0f172a
+                    #ffffff,
+                    #f9fafb
                 );
         }
         .header img {
@@ -129,7 +129,7 @@
         .slider {
             position: absolute;
             inset: 0;
-            background: #374151;
+            background: #cbd5e1;
             border-radius: 999px;
             transition: .25s;
             cursor: pointer;
@@ -167,20 +167,20 @@
             transition: .2s;
         }
         .btn-danger {
-            background: rgba(239,68,68,0.12);
-            color: var(--danger);
-            border: 1px solid rgba(239,68,68,0.35);
+            background: rgba(239,68,68,0.08);
+            color: #dc2626;
+            border: 1px solid rgba(239,68,68,0.25);
         }
         .btn-danger:hover {
-            background: rgba(239,68,68,0.2);
+            background: rgba(239,68,68,0.14);
         }
         .btn-primary {
-            background: rgba(59,130,246,0.12);
+            background: rgba(37,99,235,0.1);
             color: var(--primary);
-            border: 1px solid rgba(59,130,246,0.35);
+            border: 1px solid rgba(37,99,235,0.28);
         }
         .btn-primary:hover {
-            background: rgba(59,130,246,0.2);
+            background: rgba(37,99,235,0.16);
         }
         .footer {
             text-align: center;
@@ -193,9 +193,9 @@
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            background: rgba(34,197,94,0.12);
-            color: var(--success);
-            border: 1px solid rgba(34,197,94,0.3);
+            background: rgba(34,197,94,0.1);
+            color: #15803d;
+            border: 1px solid rgba(34,197,94,0.25);
             padding: 4px 8px;
             border-radius: 999px;
             font-size: 11px;
@@ -220,15 +220,19 @@
         </div>
     </div>
     <div class="container">
-        <!-- 状态 -->
         <div class="card">
             <div class="status-top">
                 <div class="status-label">
-                    已拦截潜在溯源行为
+                    潜在溯源行为
                 </div>
-                <div class="badge">
+                <div
+                    class="badge"
+                    id="engineBadge"
+                >
                     <div class="dot"></div>
-                    ACTIVE
+                    <span id="engineBadgeText">
+                        ACTIVE
+                    </span>
                 </div>
             </div>
             <div
@@ -242,7 +246,6 @@
                 分析追踪与动态脚本行为
             </div>
         </div>
-        <!-- 功能 -->
         <div class="card">
             <div class="feature">
                 <div class="feature-info">
@@ -298,8 +301,25 @@
                     <span class="slider"></span>
                 </label>
             </div>
+            <div class="feature">
+                <div class="feature-info">
+                    <div class="feature-title">
+                        切换主域自动清理
+                    </div>
+                    <div class="feature-desc">
+                        主域变化时清理上一主域数据
+                    </div>
+                </div>
+                <label class="switch">
+                    <input
+                        type="checkbox"
+                        id="autoCleanSwitch"
+                        checked
+                    >
+                    <span class="slider"></span>
+                </label>
+            </div>
         </div>
-        <!-- 操作 -->
         <div class="card">
             <div class="button-group">
                 <button

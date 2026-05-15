@@ -12,6 +12,27 @@ function reportBlock(url) {
         return;
     }
     window.__NEXTANTI_INJECT_LOADED__ = true;
+    const runtimeConfig = {
+        isEnabled: true,
+        fingerprintEnabled: true,
+        webrtcEnabled: true
+    };
+    try {
+        const rawConfig =
+            document.currentScript?.dataset
+                ?.nextantiConfig;
+        if (rawConfig) {
+            const parsedConfig =
+                JSON.parse(rawConfig);
+            runtimeConfig.isEnabled =
+                parsedConfig.isEnabled !== false;
+            runtimeConfig.fingerprintEnabled =
+                parsedConfig.fingerprintEnabled !==
+                false;
+            runtimeConfig.webrtcEnabled =
+                parsedConfig.webrtcEnabled !== false;
+        }
+    } catch (e) {}
     const BLACKLIST = ["account.itpub.net", "accounts.ctrip.com", "ajax.58pic.com", "api.csdn.net", "api.ip.sb", "api.passport.pptv.com", "bbs.zhibo8.cc", "bit.ly", "blog.csdn.net", "blog.itpub.net", "c.v.qq.com", "chinaunix.net", "cmstool.youku.com", "comment.api.163.com", "databack.dangdang.com", "dimg01.c-ctrip.com", "down2.uc.cn", "github.com", "hd.huya.com", "home.51cto.com", "home.ctfile.com", "home.zhibo8.cc", "hudong.vip.youku.com", "i.jrj.com.cn", "iask.sina.com.cn", "itunes.apple.com", "m.ctrip.com", "m.game.weibo.cn", "mapp.jrj.com.cn", "my.zol.com.cn","passport.ctrip.com", "passport.game.renren.com", "passport.iqiyi.com", "playbill.api.mgtv.com", "renren.com", "skylink.io", "u.faloo.com", "ucenter.51cto.com", "v.huya.com", "v2.sohu.com", "vote2.pptv.com", "wap.sogou.com", "webapi.ctfile.com", "weibo.com", "www.58pic.com", "www.iqiyi.com", "www.iteye.com", "www.zbj.com", "www.cndns.com", "mozilla.github.io", "www.sitestar.cn", "api.fastadmin.net", "m.site.baidu.com", "restapi.amap.com", "login.sina.com.cn", "now.qq.com", "message.dangdang.com", "musicapi.taihe.com", "api-live.iqiyi.com", "api.m.jd.com", "tie.163.com", "pcw-api.iqiyi.com", "so.v.ifeng.com", "passport.baidu.com", "wz.cnblogs.com", "passport.cnblogs.com", "hzs14.cnzz.com", "mths.be", "validity.thatscaptaintoyou.com", "stc.iqiyipic.com", "s14.cnzz.com", "sb.scorecardresearch.com", "js.cndns.com", "datax.baidu.com", "assets.growingio.com", "www.gnu.org", "wappassalltest.baidu.com", "baike.baidu.com", "ka.sina.com.cn", "p.qiao.baidu.com", "map.baidu.com", "www.dangdang.com", "g.alicdn.com", "s.faloo.com", "msg.qy.net", "morn.cndns.com", "i.qr.weibo.cn", "github.comgithub.com", "uis.i.sohu.com", "www.tianya.cn", "passport.mop.com", "commapi.dangdang.com", "comment.money.163.com", "chaxun.1616.net", "tieba.baidu.com", "remind.hupu.com", "service.bilibili.com", "node.video.qq.com", "api.weibo.com", "www.jiyoujia.com", "zhifu.baidu.com", "m.iask.sina.com.cn", "api.m.jd.com"];
     const SUSPICIOUS_KEYWORDS = [
         'jsonp',
@@ -59,6 +80,22 @@ function reportBlock(url) {
             ...args
         );
     }
+    function isMainEnabled() {
+        return runtimeConfig.isEnabled !== false;
+    }
+    function isFingerprintEnabled() {
+        return (
+            isMainEnabled() &&
+            runtimeConfig.fingerprintEnabled !==
+                false
+        );
+    }
+    function isWebRTCEnabled() {
+        return (
+            isMainEnabled() &&
+            runtimeConfig.webrtcEnabled !== false
+        );
+    }
     function isBlacklisted(url) {
         try {
             if (!url) {
@@ -88,6 +125,9 @@ function reportBlock(url) {
         }
     }
     function shouldBlock(url) {
+        if (!isMainEnabled()) {
+            return false;
+        }
         return (
             isBlacklisted(url) ||
             isSuspicious(url)
@@ -311,6 +351,12 @@ function reportBlock(url) {
         .prototype
         .getImageData =
         camouflage(function () {
+            if (!isFingerprintEnabled()) {
+                return originalGetImageData.apply(
+                    this,
+                    arguments
+                );
+            }
             const imageData =
                 originalGetImageData.apply(
                     this,
@@ -338,6 +384,12 @@ function reportBlock(url) {
         AudioBuffer.prototype
             .getChannelData =
             camouflage(function () {
+                if (!isFingerprintEnabled()) {
+                    return originalGetChannelData.apply(
+                        this,
+                        arguments
+                    );
+                }
                 const data =
                     originalGetChannelData.apply(
                         this,
@@ -369,6 +421,12 @@ function reportBlock(url) {
             .prototype
             .getParameter =
             camouflage(function (param) {
+                if (!isFingerprintEnabled()) {
+                    return originalGetParameter.apply(
+                        this,
+                        arguments
+                    );
+                }
                 const fakeValues = {
                     37445: 'Intel Inc.',
                     37446: 'Intel Iris OpenGL'
@@ -391,9 +449,18 @@ function reportBlock(url) {
         navigator.mediaDevices &&
         navigator.mediaDevices.enumerateDevices
     ) {
+        const originalEnumerateDevices =
+            navigator.mediaDevices
+                .enumerateDevices;
         navigator.mediaDevices
             .enumerateDevices =
             camouflage(async function () {
+                if (!isFingerprintEnabled()) {
+                    return originalEnumerateDevices.apply(
+                        this,
+                        arguments
+                    );
+                }
                 warn(
                     'enumerateDevices attempt.'
                 );
@@ -407,6 +474,11 @@ function reportBlock(url) {
             window.RTCPeerConnection;
         window.RTCPeerConnection =
             camouflage(function () {
+                if (!isWebRTCEnabled()) {
+                    return new OriginalRTC(
+                        ...arguments
+                    );
+                }
                 warn(
                     'WebRTC blocked.'
                 );
@@ -513,10 +585,40 @@ function reportBlock(url) {
         }, 'Function');
     window.Function.prototype =
         OriginalFunction.prototype;
+    window.addEventListener(
+        'message',
+        (event) => {
+            if (
+                event.source !== window
+            ) {
+                return;
+            }
+            const data = event.data;
+            if (
+                !data ||
+                data.type !==
+                    'NEXTANTI_CONFIG_UPDATE'
+            ) {
+                return;
+            }
+            const config =
+                data.config || {};
+            runtimeConfig.isEnabled =
+                config.isEnabled !== false;
+            runtimeConfig.fingerprintEnabled =
+                config.fingerprintEnabled !==
+                false;
+            runtimeConfig.webrtcEnabled =
+                config.webrtcEnabled !== false;
+            log(
+                'Runtime config updated:',
+                runtimeConfig
+            );
+        }
+    );
     setInterval(() => {
         const start =
             performance.now();
-        debugger;
         const end =
             performance.now();
         if (

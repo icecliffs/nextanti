@@ -4,6 +4,43 @@
         return;
     }
     window.__NEXTANTI_CONTENT_LOADED__ = true;
+    const runtimeConfig = {
+        isEnabled: true,
+        fingerprintEnabled: true,
+        webrtcEnabled: true
+    };
+    let hasInjected = false;
+    let hasMonitors = false;
+    function applyConfigFromStorage(data) {
+        runtimeConfig.isEnabled =
+            data?.isEnabled !== false;
+        runtimeConfig.fingerprintEnabled =
+            data?.fingerprintEnabled !== false;
+        runtimeConfig.webrtcEnabled =
+            data?.webrtcEnabled !== false;
+    }
+    function postConfigUpdate() {
+        window.postMessage(
+            {
+                type: 'NEXTANTI_CONFIG_UPDATE',
+                config: runtimeConfig
+            },
+            '*'
+        );
+    }
+    async function loadConfig() {
+        try {
+            const data =
+                await chrome.storage.local.get([
+                    'isEnabled',
+                    'fingerprintEnabled',
+                    'webrtcEnabled'
+                ]);
+            applyConfigFromStorage(data);
+        } catch (e) {
+            error('Load config failed:', e);
+        }
+    }
     function log(...args) {
         console.log(
             '%c[NextAnti]',
@@ -53,12 +90,17 @@
                 chrome.runtime.getURL(
                     'inject.js'
                 );
+            script.dataset.nextantiConfig =
+                JSON.stringify(
+                    runtimeConfig
+                );
             script.type =
                 'text/javascript';
             script.async = false;
             script.onload = function () {
                 log('inject.js loaded.');
                 this.remove();
+                postConfigUpdate();
             };
             (
                 document.head ||
@@ -72,6 +114,9 @@
         }
     }
     function detectHoneypotFeatures() {
+        if (!runtimeConfig.isEnabled) {
+            return;
+        }
         try {
             const html =
                 document.documentElement
@@ -141,6 +186,9 @@
         }
     }
     function detectObfuscatedScripts() {
+        if (!runtimeConfig.isEnabled) {
+            return;
+        }
         try {
             const scripts =
                 document.querySelectorAll(
@@ -197,6 +245,11 @@
                                 const lower =
                                     src.toLowerCase();
                                 if (
+                                    !runtimeConfig.isEnabled
+                                ) {
+                                    continue;
+                                }
+                                if (
                                     lower.includes(
                                         'fingerprint'
                                     ) ||
@@ -240,6 +293,11 @@
         document.addEventListener(
             'copy',
             () => {
+                if (
+                    !runtimeConfig.isEnabled
+                ) {
+                    return;
+                }
                 warn(
                     '页面触发 copy 事件'
                 );
@@ -249,6 +307,11 @@
         document.addEventListener(
             'paste',
             () => {
+                if (
+                    !runtimeConfig.isEnabled
+                ) {
+                    return;
+                }
                 warn(
                     '页面监听 paste 事件'
                 );
@@ -268,6 +331,14 @@
                     key,
                     value
                 ) {
+                    if (
+                        !runtimeConfig.isEnabled
+                    ) {
+                        return originalLocalSet.apply(
+                            this,
+                            arguments
+                        );
+                    }
                     warn(
                         'localStorage.setItem:',
                         key
@@ -284,6 +355,14 @@
                     key,
                     value
                 ) {
+                    if (
+                        !runtimeConfig.isEnabled
+                    ) {
+                        return originalSessionSet.apply(
+                            this,
+                            arguments
+                        );
+                    }
                     warn(
                         'sessionStorage.setItem:',
                         key
@@ -301,6 +380,9 @@
         }
     }
     function detectHiddenIframes() {
+        if (!runtimeConfig.isEnabled) {
+            return;
+        }
         try {
             const iframes =
                 document.querySelectorAll(
@@ -341,6 +423,14 @@
                 window.eval;
             window.eval =
                 function () {
+                    if (
+                        !runtimeConfig.isEnabled
+                    ) {
+                        return originalEval.apply(
+                            this,
+                            arguments
+                        );
+                    }
                     warn(
                         'eval execution detected.'
                     );
@@ -368,6 +458,14 @@
                     ...args
                 ) {
                     try {
+                        if (
+                            !runtimeConfig.isEnabled
+                        ) {
+                            return originalFetch.apply(
+                                this,
+                                args
+                            );
+                        }
                         const url =
                             args[0];
                         if (
@@ -419,6 +517,14 @@
                 ) {
                     try {
                         if (
+                            !runtimeConfig.isEnabled
+                        ) {
+                            return originalOpen.apply(
+                                this,
+                                arguments
+                            );
+                        }
+                        if (
                             typeof url === 'string'
                         ) {
                             const lower =
@@ -457,10 +563,22 @@
         }
     }
     function init() {
-        log(
-            'Content script initialized.'
-        );
-        injectScript();
+        if (!hasInjected) {
+            log(
+                'Content script initialized.'
+            );
+            injectScript();
+            hasInjected = true;
+        }
+        if (!runtimeConfig.isEnabled) {
+            log(
+                'Protection disabled by main switch.'
+            );
+            return;
+        }
+        if (hasMonitors) {
+            return;
+        }
         detectHoneypotFeatures();
         detectObfuscatedScripts();
         monitorDynamicScripts();
@@ -470,6 +588,7 @@
         monitorEvalUsage();
         monitorFetchRequests();
         monitorXHR();
+        hasMonitors = true;
     }
     window.addEventListener(
         'message',
@@ -502,15 +621,56 @@
             }
         }
     );
-    if (
-        document.readyState ===
-        'loading'
-    ) {
-        document.addEventListener(
-            'DOMContentLoaded',
-            init
-        );
-    } else {
+    chrome.storage.onChanged.addListener(
+        (changes, areaName) => {
+            if (
+                areaName !== 'local'
+            ) {
+                return;
+            }
+            if (
+                changes.isEnabled
+            ) {
+                runtimeConfig.isEnabled =
+                    changes.isEnabled.newValue !==
+                    false;
+            }
+            if (
+                changes.fingerprintEnabled
+            ) {
+                runtimeConfig.fingerprintEnabled =
+                    changes.fingerprintEnabled
+                        .newValue !== false;
+            }
+            if (
+                changes.webrtcEnabled
+            ) {
+                runtimeConfig.webrtcEnabled =
+                    changes.webrtcEnabled.newValue !==
+                    false;
+            }
+            postConfigUpdate();
+            if (
+                runtimeConfig.isEnabled &&
+                !hasMonitors
+            ) {
+                init();
+            }
+        }
+    );
+    async function bootstrap() {
+        await loadConfig();
+        if (
+            document.readyState ===
+            'loading'
+        ) {
+            document.addEventListener(
+                'DOMContentLoaded',
+                init
+            );
+            return;
+        }
         init();
     }
+    bootstrap();
 })();

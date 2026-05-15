@@ -18,6 +18,10 @@ document.addEventListener(
             document.getElementById(
                 'webrtcSwitch'
             );
+        const autoCleanSwitch =
+            document.getElementById(
+                'autoCleanSwitch'
+            );
         const clearDataBtn =
             document.getElementById(
                 'clearDataBtn'
@@ -26,23 +30,91 @@ document.addEventListener(
             document.getElementById(
                 'reloadBtn'
             );
+        const engineBadge =
+            document.getElementById(
+                'engineBadge'
+            );
+        const engineBadgeText =
+            document.getElementById(
+                'engineBadgeText'
+            );
+        async function getActiveTab() {
+            const tabs =
+                await chrome.tabs.query({
+                    active: true,
+                    currentWindow: true
+                });
+            return tabs[0];
+        }
+        async function refreshCurrentSiteCount() {
+            try {
+                const tab =
+                    await getActiveTab();
+                if (!tab?.url) {
+                    interceptCount.textContent =
+                        '0';
+                    return;
+                }
+                const response =
+                    await chrome.runtime.sendMessage(
+                        {
+                            action:
+                                'getSiteBlockCount',
+                            siteUrl: tab.url
+                        }
+                    );
+                const count =
+                    response?.status === 'ok'
+                        ? response.count || 0
+                        : 0;
+                interceptCount.textContent =
+                    String(count);
+            } catch (e) {
+                interceptCount.textContent = '0';
+            }
+        }
+        function syncEngineBadge(enabled) {
+            if (!engineBadge) {
+                return;
+            }
+            if (engineBadgeText) {
+                engineBadgeText.textContent =
+                    enabled
+                ? 'ACTIVE'
+                : 'OFF';
+            }
+            engineBadge.style.color = enabled
+                ? 'var(--success)'
+                : 'var(--warning)';
+            engineBadge.style.background = enabled
+                ? 'rgba(34,197,94,0.12)'
+                : 'rgba(245,158,11,0.12)';
+            engineBadge.style.borderColor = enabled
+                ? 'rgba(34,197,94,0.3)'
+                : 'rgba(245,158,11,0.35)';
+        }
         async function initialize() {
             try {
                 const data =
                     await chrome.storage.local.get([
-                        'blockCount',
                         'isEnabled',
                         'fingerprintEnabled',
-                        'webrtcEnabled'
+                        'webrtcEnabled',
+                        'autoCleanPrevDomain'
                     ]);
-                interceptCount.textContent =
-                    data.blockCount || 0;
+                await refreshCurrentSiteCount();
                 mainSwitch.checked =
                     data.isEnabled !== false;
+                syncEngineBadge(
+                    data.isEnabled !== false
+                );
                 fingerprintSwitch.checked =
                     data.fingerprintEnabled !== false;
                 webrtcSwitch.checked =
                     data.webrtcEnabled !== false;
+                autoCleanSwitch.checked =
+                    data.autoCleanPrevDomain !==
+                    false;
             } catch (e) {
                 console.error(
                     '[NextAnti]',
@@ -59,6 +131,7 @@ document.addEventListener(
                 await chrome.storage.local.set({
                     isEnabled: enabled
                 });
+                syncEngineBadge(enabled);
                 console.log(
                     '[NextAnti] Main switch:',
                     enabled
@@ -113,6 +186,26 @@ document.addEventListener(
                 );
             }
         );
+        autoCleanSwitch.addEventListener(
+            'change',
+            async () => {
+                const enabled =
+                    autoCleanSwitch.checked;
+                await chrome.storage.local.set({
+                    autoCleanPrevDomain:
+                        enabled
+                });
+                console.log(
+                    '[NextAnti] Auto clean previous domain:',
+                    enabled
+                );
+                notify(
+                    enabled
+                        ? '切换主域自动清理已启用'
+                        : '切换主域自动清理已关闭'
+                );
+            }
+        );
         // ====================================
         // 清除站点数据
         // ====================================
@@ -154,6 +247,8 @@ document.addEventListener(
                                 notify(
                                     '站点数据清除成功'
                                 );
+                                interceptCount.textContent =
+                                    '0';
                                 window.close();
                             } else {
                                 notify(
@@ -213,18 +308,14 @@ document.addEventListener(
                     return;
                 }
                 if (
-                    changes.blockCount
-                ) {
-                    interceptCount.textContent =
-                        changes.blockCount
-                            .newValue || 0;
-                }
-                if (
                     changes.isEnabled
                 ) {
                     mainSwitch.checked =
                         changes.isEnabled
                             .newValue;
+                    syncEngineBadge(
+                        changes.isEnabled.newValue
+                    );
                 }
                 if (
                     changes.fingerprintEnabled
@@ -241,6 +332,19 @@ document.addEventListener(
                         changes
                             .webrtcEnabled
                             .newValue;
+                }
+                if (
+                    changes.autoCleanPrevDomain
+                ) {
+                    autoCleanSwitch.checked =
+                        changes
+                            .autoCleanPrevDomain
+                            .newValue;
+                }
+                if (
+                    changes.siteBlockStats
+                ) {
+                    refreshCurrentSiteCount();
                 }
             }
         );
