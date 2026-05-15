@@ -25,6 +25,8 @@
 
 ![](./img/1.jpg)
 
+<img width="1918" height="926" alt="Snipaste_2026-05-15_14-40-13" src="https://github.com/user-attachments/assets/6717a452-33f5-43d9-8c9e-d8e063748d07" />
+
 ## Install
 
 打开：
