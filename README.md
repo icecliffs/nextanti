@@ -1,28 +1,28 @@
 ## NextAnti
 
-> NextAnti 是一个基于 Chrome Manifest V3 的浏览器安全扩展，是一款专门用于反反蜜罐的插件
+> NextAnti is a Chrome Manifest V3-based browser security extension designed specifically for anti-honeypot countermeasures.
 
-> **建议打红的时候再用，不然平时插件会一直删Cookie**
+> **Recommended for use only during red team operations; otherwise the extension may continuously delete cookies.**
 
-- 反追踪（Anti Tracking）
-- 反指纹（Anti Fingerprint）
-- 蜜罐检测（Honeypot Detection）
-- 动态脚本监控
-- WebRTC 防泄漏
-- Tracker / Analytics 拦截
-- 前端对抗与浏览器隐私保护
+- Anti Tracking
+- Anti Fingerprinting
+- Honeypot Detection
+- Dynamic Script Monitoring
+- WebRTC Leak Prevention
+- Tracker / Analytics Blocking
+- Front-end Countermeasures and Browser Privacy Protection
 
-## Feat
+## Features
 
-- 基础反蜜罐检测，拦截 Analytics / Tracker
-- Canvas 指纹对抗
-- 随机 User-Agent
-- WebGL 指纹对抗
-- Audio 指纹对抗
-- WebRTC 阻断
-- 动态 Script 检测
-- 混淆 JS 检测
-- 蜜罐特征检测
+- Basic honeypot detection with blocking of analytics / trackers  
+- Canvas fingerprint resistance  
+- Randomized User-Agent  
+- WebGL fingerprint resistance  
+- Audio fingerprint resistance  
+- WebRTC blocking  
+- Dynamic script detection  
+- Obfuscated JavaScript detection  
+- Honeypot signature detection  
 
 ## Screenshot
 
@@ -32,54 +32,70 @@
 
 ## Install
 
-打开：
+Open:
+
 ```bash
 chrome://extensions
+````
+
+Enable:
+
 ```
-开启：
+Developer Mode
 ```
-开发者模式
+
+Click:
+
 ```
-点击：
+Load unpacked extension
 ```
-加载已解压的扩展程序
-```
-选择：
+
+Select:
+
 ```
 NextAnti/
 ```
 
 ## Add Rule
 
-修改：
+Modify:
+
 ```js
 background.js
 ```
-添加：
+
+Add:
+
 ```json
 {
     id: 999,
     host: 'example.com'
 }
 ```
-同时建议在：
+
+Also recommended to add in:
+
 ```js
 inject.js
 ```
-中的：
+
+Inside:
+
 ```js
 const BLACKLIST = [
 ```
-也添加：
+
+Add:
+
 ```
 'example.com'
 ```
 
 ## References
 
-项目部分源代码参考
+This project partially references the following repositories:
 
-- https://github.com/cnrstar/anti-honeypot
-- https://github.com/Monyer/antiHoneypot
-- https://github.com/iiiusky/AntiHoneypot-Chrome-simple
-- https://github.com/wpexpertsio/cf7-honeypot
+* [https://github.com/cnrstar/anti-honeypot](https://github.com/cnrstar/anti-honeypot)
+* [https://github.com/Monyer/antiHoneypot](https://github.com/Monyer/antiHoneypot)
+* [https://github.com/iiiusky/AntiHoneypot-Chrome-simple](https://github.com/iiiusky/AntiHoneypot-Chrome-simple)
+* [https://github.com/wpexpertsio/cf7-honeypot](https://github.com/wpexpertsio/cf7-honeypot)
