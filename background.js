@@ -6,6 +6,7 @@ let persistStatsTimer = null;
 const SITE_UA_STATE = {};
 const TAB_LAST_MAIN_DOMAIN = {};
 const MAIN_DOMAIN_ORIGINS = {};
+const TAB_LAST_NOTIFICATION = {};
 const UA_RULE_ID_BASE = 10000;
 const UA_RULE_ID_LIMIT = 3000;
 const UA_RESOURCE_TYPES = [
@@ -596,6 +597,12 @@ async function rotateSiteUA(url) {
     if (!site) {
         return;
     }
+    try {
+        const config = await chrome.storage.local.get('isEnabled');
+        if (config.isEnabled === false) {
+            return;
+        }
+    } catch (e) {}
     const oldUA =
         SITE_UA_STATE[site]?.ua || '';
     const ua = pickRandomUA(oldUA);
@@ -775,9 +782,11 @@ chrome.storage.onChanged.addListener(
         ) {
             return;
         }
-        await initializeRules(
-            changes.isEnabled.newValue !== false
-        );
+        const enabled = changes.isEnabled.newValue !== false;
+        await initializeRules(enabled);
+        if (!enabled) {
+            await clearAllSiteUARules();
+        }
     }
 );
 async function updateBadge(tabId) {
@@ -809,6 +818,16 @@ async function updateBadge(tabId) {
         );
     }
 }
+
+function shouldThrottleNotification(tabId, intervalMs = 30000) {
+	const now = Date.now();
+	const last = TAB_LAST_NOTIFICATION[tabId] || 0;
+	if (now - last < intervalMs) {
+		return true;
+	}
+	TAB_LAST_NOTIFICATION[tabId] = now;
+	return false;
+}
 async function handleBlock(
     url,
     tabId,
@@ -832,15 +851,20 @@ async function handleBlock(
             hostname =
                 new URL(url).hostname;
         } catch (e) {}
-        chrome.notifications.create({
-            type: 'basic',
-            iconUrl:
-                'icons/icon128.png',
-            title:
-                'NextAnti 已拦截',
-            message:
-                hostname
-        });
+	        if (
+	            tabId &&
+	            !shouldThrottleNotification(tabId)
+	        ) {
+	            chrome.notifications.create({
+	                type: 'basic',
+	                iconUrl:
+	                    'icons/icon128.png',
+	                title:
+	                    'NextAnti 已拦截',
+	                message:
+	                    hostname
+	            });
+	        }
         console.warn(
             '[NextAnti] Blocked:',
             url
@@ -961,15 +985,19 @@ chrome.runtime.onMessage.addListener(
             message.action ===
             'alert'
         ) {
-            chrome.notifications.create({
-                type: 'basic',
-                iconUrl:
-                    'icons/icon128.png',
-                title:
-                    'NextAnti 告警',
-                message:
-                    message.message
-            });
+	        if (
+	            !shouldThrottleNotification(sender.tab?.id)
+	        ) {
+	            chrome.notifications.create({
+	                type: 'basic',
+	                iconUrl:
+	                    'icons/icon128.png',
+	                title:
+	                    'NextAnti 告警',
+	                message:
+	                    message.message
+	            });
+	        }
             sendResponse({
                 status:
                     'received'
@@ -1049,8 +1077,18 @@ chrome.tabs.onUpdated.addListener(
 );
 chrome.tabs.onRemoved.addListener(
     async (tabId) => {
+        const mainDomain = TAB_LAST_MAIN_DOMAIN[tabId];
         delete TAB_COUNTER[tabId];
         delete TAB_LAST_MAIN_DOMAIN[tabId];
+        delete TAB_LAST_NOTIFICATION[tabId];
+        if (mainDomain) {
+            const stillInUse = Object.values(TAB_LAST_MAIN_DOMAIN).some(
+                d => d === mainDomain
+            );
+            if (!stillInUse) {
+                delete MAIN_DOMAIN_ORIGINS[mainDomain];
+            }
+        }
         await chrome.action
             .setBadgeText({
                 tabId,

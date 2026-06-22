@@ -7,7 +7,8 @@
     const runtimeConfig = {
         isEnabled: true,
         fingerprintEnabled: true,
-        webrtcEnabled: true
+        webrtcEnabled: true,
+        allowlist: []
     };
     let hasInjected = false;
     let hasMonitors = false;
@@ -18,12 +19,19 @@
             data?.fingerprintEnabled !== false;
         runtimeConfig.webrtcEnabled =
             data?.webrtcEnabled !== false;
+        runtimeConfig.allowlist =
+            data?.allowlist || [];
     }
     function postConfigUpdate() {
         window.postMessage(
             {
                 type: 'NEXTANTI_CONFIG_UPDATE',
-                config: runtimeConfig
+                config: {
+                    isEnabled: runtimeConfig.isEnabled,
+                    fingerprintEnabled: runtimeConfig.fingerprintEnabled,
+                    webrtcEnabled: runtimeConfig.webrtcEnabled,
+                    allowlist: runtimeConfig.allowlist
+                }
             },
             '*'
         );
@@ -34,11 +42,26 @@
                 await chrome.storage.local.get([
                     'isEnabled',
                     'fingerprintEnabled',
-                    'webrtcEnabled'
+                    'webrtcEnabled',
+                    'allowlist'
                 ]);
             applyConfigFromStorage(data);
         } catch (e) {
             error('Load config failed:', e);
+        }
+    }
+    function isAllowlisted() {
+        try {
+            const hostname = location.hostname.toLowerCase();
+            const list = runtimeConfig.allowlist;
+            if (!hostname || !list || !list.length) {
+                return false;
+            }
+            return list.some(entry =>
+                hostname.endsWith(entry.toLowerCase())
+            );
+        } catch (e) {
+            return false;
         }
     }
     function log(...args) {
@@ -91,9 +114,12 @@
                     'inject.js'
                 );
             script.dataset.nextantiConfig =
-                JSON.stringify(
-                    runtimeConfig
-                );
+                JSON.stringify({
+                    isEnabled: runtimeConfig.isEnabled,
+                    fingerprintEnabled: runtimeConfig.fingerprintEnabled,
+                    webrtcEnabled: runtimeConfig.webrtcEnabled,
+                    allowlist: runtimeConfig.allowlist
+                });
             script.type =
                 'text/javascript';
             script.async = false;
@@ -114,7 +140,7 @@
         }
     }
     function detectHoneypotFeatures() {
-        if (!runtimeConfig.isEnabled) {
+        if (isAllowlisted() || !runtimeConfig.isEnabled) {
             return;
         }
         try {
@@ -186,7 +212,7 @@
         }
     }
     function detectObfuscatedScripts() {
-        if (!runtimeConfig.isEnabled) {
+        if (isAllowlisted() || !runtimeConfig.isEnabled) {
             return;
         }
         try {
@@ -245,6 +271,7 @@
                                 const lower =
                                     src.toLowerCase();
                                 if (
+                                    isAllowlisted() ||
                                     !runtimeConfig.isEnabled
                                 ) {
                                     continue;
@@ -294,6 +321,7 @@
             'copy',
             () => {
                 if (
+                    isAllowlisted() ||
                     !runtimeConfig.isEnabled
                 ) {
                     return;
@@ -308,6 +336,7 @@
             'paste',
             () => {
                 if (
+                    isAllowlisted() ||
                     !runtimeConfig.isEnabled
                 ) {
                     return;
@@ -332,6 +361,7 @@
                     value
                 ) {
                     if (
+                        isAllowlisted() ||
                         !runtimeConfig.isEnabled
                     ) {
                         return originalLocalSet.apply(
@@ -356,6 +386,7 @@
                     value
                 ) {
                     if (
+                        isAllowlisted() ||
                         !runtimeConfig.isEnabled
                     ) {
                         return originalSessionSet.apply(
@@ -380,7 +411,7 @@
         }
     }
     function detectHiddenIframes() {
-        if (!runtimeConfig.isEnabled) {
+        if (isAllowlisted() || !runtimeConfig.isEnabled) {
             return;
         }
         try {
@@ -424,6 +455,7 @@
             window.eval =
                 function () {
                     if (
+                        isAllowlisted() ||
                         !runtimeConfig.isEnabled
                     ) {
                         return originalEval.apply(
@@ -459,6 +491,7 @@
                 ) {
                     try {
                         if (
+                            isAllowlisted() ||
                             !runtimeConfig.isEnabled
                         ) {
                             return originalFetch.apply(
@@ -517,6 +550,7 @@
                 ) {
                     try {
                         if (
+                            isAllowlisted() ||
                             !runtimeConfig.isEnabled
                         ) {
                             return originalOpen.apply(
@@ -607,17 +641,21 @@
                 data.type ===
                 'NEXTANTI_BLOCK'
             ) {
-                sendBlock(
-                    data.url
-                );
+                if (!isAllowlisted()) {
+                    sendBlock(
+                        data.url
+                    );
+                }
             }
             if (
                 data.type ===
                 'NEXTANTI_ALERT'
             ) {
-                sendAlert(
-                    data.message
-                );
+                if (!isAllowlisted()) {
+                    sendAlert(
+                        data.message
+                    );
+                }
             }
         }
     );
@@ -649,6 +687,12 @@
                     changes.webrtcEnabled.newValue !==
                     false;
             }
+            if (
+                changes.allowlist
+            ) {
+                runtimeConfig.allowlist =
+                    changes.allowlist.newValue || [];
+            }
             postConfigUpdate();
             if (
                 runtimeConfig.isEnabled &&
@@ -659,18 +703,16 @@
         }
     );
     async function bootstrap() {
-        await loadConfig();
-        if (
-            document.readyState ===
-            'loading'
-        ) {
-            document.addEventListener(
-                'DOMContentLoaded',
-                init
-            );
-            return;
+        let domReady = document.readyState !== 'loading';
+        if (!domReady) {
+            document.addEventListener('DOMContentLoaded', () => { domReady = true; });
         }
-        init();
+        await loadConfig();
+        if (domReady || document.readyState !== 'loading') {
+            init();
+        } else {
+            document.addEventListener('DOMContentLoaded', init);
+        }
     }
     bootstrap();
 })();

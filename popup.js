@@ -38,6 +38,28 @@ document.addEventListener(
             document.getElementById(
                 'engineBadgeText'
             );
+        const allowlistToggleBtn =
+            document.getElementById(
+                'allowlistToggleBtn'
+            );
+        const currentHostEl =
+            document.getElementById(
+                'currentHost'
+            );
+        const allowlistList =
+            document.getElementById(
+                'allowlistList'
+            );
+        const allowlistItems =
+            document.getElementById(
+                'allowlistItems'
+            );
+        const featureEls = [
+            mainSwitch?.closest('.feature'),
+            fingerprintSwitch?.closest('.feature'),
+            webrtcSwitch?.closest('.feature'),
+            autoCleanSwitch?.closest('.feature')
+        ].filter(Boolean);
         async function getActiveTab() {
             const tabs =
                 await chrome.tabs.query({
@@ -93,6 +115,72 @@ document.addEventListener(
                 ? 'rgba(34,197,94,0.3)'
                 : 'rgba(245,158,11,0.35)';
         }
+        function getHostnameFromUrl(url) {
+            try {
+                return new URL(url).hostname.toLowerCase();
+            } catch (e) {
+                return '';
+            }
+        }
+        async function loadAllowlist() {
+            try {
+                const data = await chrome.storage.local.get('allowlist');
+                return data.allowlist || [];
+            } catch (e) {
+                return [];
+            }
+        }
+        async function saveAllowlist(list) {
+            await chrome.storage.local.set({ allowlist: list });
+        }
+        function renderAllowlistItems(list) {
+            allowlistItems.innerHTML = '';
+            if (!list || !list.length) {
+                allowlistList.style.display = 'none';
+                return;
+            }
+            allowlistList.style.display = 'block';
+            list.forEach((entry, idx) => {
+                const item = document.createElement('div');
+                item.className = 'allowlist-item';
+                const name = document.createElement('span');
+                name.textContent = entry;
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'allowlist-item-remove';
+                removeBtn.textContent = '✕';
+                removeBtn.title = '移除 ' + entry;
+                removeBtn.addEventListener('click', async () => {
+                    const updated = await loadAllowlist();
+                    const filtered = updated.filter((_, i) => i !== idx);
+                    await saveAllowlist(filtered);
+                    renderAllowlistItems(filtered);
+                    updateAllowlistUI(filtered);
+                });
+                item.appendChild(name);
+                item.appendChild(removeBtn);
+                allowlistItems.appendChild(item);
+            });
+        }
+        async function updateAllowlistUI(list) {
+            const tab = await getActiveTab();
+            const hostname = getHostnameFromUrl(tab?.url || '');
+            currentHostEl.textContent = hostname || '—';
+            const isInList = list.some(entry =>
+                hostname && hostname.endsWith(entry.toLowerCase())
+            );
+            if (isInList) {
+                allowlistToggleBtn.textContent = '🔒 移出白名单';
+                allowlistToggleBtn.className = 'btn btn-allowlist remove';
+                featureEls.forEach(el => el.classList.add('disabled'));
+                mainSwitch.checked = false;
+                syncEngineBadge(false);
+            } else {
+                allowlistToggleBtn.textContent = '🔓 加入白名单';
+                allowlistToggleBtn.className = 'btn btn-allowlist add';
+                featureEls.forEach(el => el.classList.remove('disabled'));
+            }
+            allowlistToggleBtn.disabled = !hostname;
+        }
         async function initialize() {
             try {
                 const data =
@@ -100,9 +188,13 @@ document.addEventListener(
                         'isEnabled',
                         'fingerprintEnabled',
                         'webrtcEnabled',
-                        'autoCleanPrevDomain'
+                        'autoCleanPrevDomain',
+                        'allowlist'
                     ]);
                 await refreshCurrentSiteCount();
+                const list = data.allowlist || [];
+                await updateAllowlistUI(list);
+                renderAllowlistItems(list);
                 mainSwitch.checked =
                     data.isEnabled !== false;
                 syncEngineBadge(
@@ -295,6 +387,33 @@ document.addEventListener(
             }
         );
         // ====================================
+        // 白名单切换
+        // ====================================
+        allowlistToggleBtn.addEventListener(
+            'click',
+            async () => {
+                const tab = await getActiveTab();
+                const hostname = getHostnameFromUrl(tab?.url || '');
+                if (!hostname) return;
+                const list = await loadAllowlist();
+                const idx = list.findIndex(entry =>
+                    hostname.endsWith(entry.toLowerCase())
+                );
+                if (idx >= 0) {
+                    list.splice(idx, 1);
+                } else {
+                    list.push(hostname);
+                }
+                await saveAllowlist(list);
+                renderAllowlistItems(list);
+                await updateAllowlistUI(list);
+                notify(list.includes(hostname)
+                    ? `已加入白名单: ${hostname}`
+                    : `已移出白名单: ${hostname}`
+                );
+            }
+        );
+        // ====================================
         // storage 实时同步
         // ====================================
         chrome.storage.onChanged.addListener(
@@ -345,6 +464,13 @@ document.addEventListener(
                     changes.siteBlockStats
                 ) {
                     refreshCurrentSiteCount();
+                }
+                if (
+                    changes.allowlist
+                ) {
+                    const list = changes.allowlist.newValue || [];
+                    updateAllowlistUI(list);
+                    renderAllowlistItems(list);
                 }
             }
         );

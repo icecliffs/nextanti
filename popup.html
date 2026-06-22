@@ -207,6 +207,82 @@
             border-radius: 50%;
             background: var(--success);
         }
+        .allowlist-header {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            margin-bottom: 12px;
+        }
+        .allowlist-title {
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .allowlist-desc {
+            font-size: 11px;
+            color: var(--muted);
+        }
+        .allowlist-current {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+        }
+        .current-host {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--primary);
+            word-break: break-all;
+        }
+        .btn-allowlist {
+            width: auto;
+            padding: 6px 12px;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+        .btn-allowlist.remove {
+            background: rgba(239,68,68,0.08);
+            color: #dc2626;
+            border: 1px solid rgba(239,68,68,0.25);
+        }
+        .btn-allowlist.add {
+            background: rgba(34,197,94,0.08);
+            color: #15803d;
+            border: 1px solid rgba(34,197,94,0.25);
+        }
+        .allowlist-list {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid var(--border);
+        }
+        .allowlist-list-title {
+            font-size: 11px;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+        .allowlist-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 4px 0;
+            font-size: 12px;
+        }
+        .allowlist-item-remove {
+            cursor: pointer;
+            color: var(--muted);
+            font-size: 14px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: none;
+            border: none;
+        }
+        .allowlist-item-remove:hover {
+            color: var(--danger);
+            background: rgba(239,68,68,0.1);
+        }
+        .feature.disabled {
+            opacity: 0.45;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body>
@@ -320,6 +396,22 @@
                 </label>
             </div>
         </div>
+        <div class="card" id="allowlistCard">
+            <div class="allowlist-header">
+                <span class="allowlist-title">🔖 网站白名单</span>
+                <span class="allowlist-desc">白名单内网站不检测不弹窗</span>
+            </div>
+            <div class="allowlist-current" id="allowlistCurrent">
+                <span class="current-host" id="currentHost">—</span>
+                <button class="btn btn-allowlist" id="allowlistToggleBtn">
+                    加入白名单
+                </button>
+            </div>
+            <div class="allowlist-list" id="allowlistList" style="display:none;">
+                <div class="allowlist-list-title">已加入白名单的网站：</div>
+                <div id="allowlistItems"></div>
+            </div>
+        </div>
         <div class="card">
             <div class="button-group">
                 <button
@@ -338,7 +430,7 @@
         </div>
     </div>
     <div class="footer">
-        NextAnti v0.3.1 · Gh0xE9（浅红实验室）
+        NextAnti v0.3.4 · Gh0xE9（浅红实验室）
     </div>
     <script src="popup.js"></script>
 </body>
